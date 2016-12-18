@@ -1,5 +1,6 @@
 ﻿using Nest;
 using PerfmonBeat.Config;
+using PerfmonBeat.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -54,6 +55,7 @@ namespace PerfmonBeat
 				}
 
 				Thread.Sleep(config.Interval);
+				var metric = new Metric();
 
 				//data[counter.Key] = performanceCounter.NextValue();
 				//client.Index(m, request => request.Index($"metricbeat-{DateTime.Now.ToString("yyyy.MM.dd")}"));

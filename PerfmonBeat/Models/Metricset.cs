@@ -2,7 +2,7 @@
 {
 	public class Metricset
 	{
-		public string Module { get; set; }
+		public string Module { get; set; } = "perfmon";
 		public string Name { get; set; }
 		public int Rtt { get; set; }
 	}
