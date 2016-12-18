@@ -63,6 +63,9 @@
     <Compile Include="Config\CounterElement.cs" />
     <Compile Include="Config\CountersCollection.cs" />
     <Compile Include="Config\PerfmonConfiguration.cs" />
+    <Compile Include="Models\Beat.cs" />
+    <Compile Include="Models\Metric.cs" />
+    <Compile Include="Models\Metricset.cs" />
     <Compile Include="PerfmonBeatService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,11 +1,7 @@
 ﻿using PerfmonBeat.Config;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Topshelf;
 
 namespace PerfmonBeat
@@ -15,30 +11,24 @@ namespace PerfmonBeat
 		public static void Main(string[] args)
 		{
 			var config = (PerfmonConfiguration)ConfigurationManager.GetSection("perfmon");
-			Console.WriteLine($"Interval: {config.Interval:N0}");
-			Console.WriteLine($"Elastic: {config.Elastic}");
-			Console.WriteLine($"Counters: {config.Counters.Count()}");
 
+			Console.WriteLine($"[Config] Interval: {config.Interval:N0}");
+			Console.WriteLine($"[Config] Elastic: {config.Elastic}");
+			Console.WriteLine($"[Config] Counters: {config.Counters.Count()}");
 
-			//var assembly = Assembly.GetExecutingAssembly();
-			//var descriptionAttribute = assembly
-			//	.GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false)
-			//	.OfType<AssemblyDescriptionAttribute>()
-			//	.FirstOrDefault();
+			HostFactory.Run(x =>
+			{
+				x.Service<PerfmonBeatService>(hostSettings => new PerfmonBeatService(config));
+				x.RunAsNetworkService();
+				//x.RunAsLocalSystem();
+				x.StartAutomaticallyDelayed();
 
-			//HostFactory.Run(x =>
-			//{
-			//	x.Service<PerfmonBeatService>();
-			//	x.RunAsNetworkService();
-			//	//x.RunAsLocalSystem();
-			//	x.StartAutomaticallyDelayed();
+				x.EnableServiceRecovery(rc => rc.RestartService(1));
 
-			//	x.EnableServiceRecovery(rc => rc.RestartService(1));
-
-			//	x.SetDescription(descriptionAttribute?.Description);
-			//	x.SetDisplayName(assembly.GetName().Name);
-			//	x.SetServiceName(assembly.GetName().Name);
-			//});
+				x.SetDescription(config.AssemblyDescription);
+				x.SetDisplayName(config.AssemblyName);
+				x.SetServiceName(config.AssemblyName);
+			});
 		}
 	}
 }
