@@ -67,7 +67,7 @@ namespace PerfmonBeat
 						metric.Perfmon[Normalize(counter.Key)] = new Dictionary<string, float>();
 
 						foreach (var item in counter) {
-							metric.Perfmon[Normalize(counter.Key)][Normalize(string.IsNullOrEmpty(item.Instance) ? "all" : item.Instance)] = data[item.Key];
+							metric.Perfmon[Normalize(counter.Key)][Normalize(string.IsNullOrEmpty(item.Instance) ? "total" : item.Instance)] = data[item.Key];
 							tick += 1;
 						}
 					}

@@ -47,6 +47,23 @@ namespace PerfmonBeat.Config
 
 		public string Key => $"{Category}\\{Counter}\\{Instance ?? "*"}";
 
-		public bool IsValid => PerformanceCounterCategory.GetCategories().Any(category => category.CategoryName == Category) && PerformanceCounterCategory.CounterExists(Counter, Category) && PerformanceCounterCategory.InstanceExists(Instance, Category);
+		public bool IsValid {
+			get
+			{
+				var categoryExists = PerformanceCounterCategory.GetCategories().Any(category => category.CategoryName == Category);
+				if (!categoryExists) return false;
+
+				var counterExists = PerformanceCounterCategory.CounterExists(Counter, Category);
+				if (!counterExists) return false;
+
+				if(!string.IsNullOrEmpty(Instance))
+				{
+					var instanceExists = PerformanceCounterCategory.InstanceExists(Instance, Category);
+					if (!instanceExists) return false;
+				}
+
+				return true;
+			}
+		}
 	}
 }
