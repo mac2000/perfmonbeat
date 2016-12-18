@@ -8,6 +8,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Topshelf;
@@ -42,6 +43,7 @@ namespace PerfmonBeat
 
 					Thread.Sleep(config.Interval);
 					data[counter.Key] = performanceCounter.NextValue();
+					Console.WriteLine($"{data[counter.Key]:N0} - {counter.Key}");
 				}
 			}
 		}
@@ -55,11 +57,37 @@ namespace PerfmonBeat
 				}
 
 				Thread.Sleep(config.Interval);
-				var metric = new Metric();
 
-				//data[counter.Key] = performanceCounter.NextValue();
-				//client.Index(m, request => request.Index($"metricbeat-{DateTime.Now.ToString("yyyy.MM.dd")}"));
+				foreach (var category in config.Counters.GroupBy(counter => counter.Category))
+				{
+					var tick = 0;
+					var metric = new Metric();
+					metric.Metricset.Name = Normalize(category.Key);
+
+					foreach (var counter in category.GroupBy(counter => counter.Counter))
+					{
+						metric.Perfmon[Normalize(counter.Key)] = new Dictionary<string, float>();
+
+						foreach (var item in counter) {
+							metric.Perfmon[Normalize(counter.Key)][Normalize(string.IsNullOrEmpty(item.Instance) ? "all" : item.Instance)] = data[item.Key];
+							tick += 1;
+						}
+					}
+					
+					//Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(metric, Newtonsoft.Json.Formatting.Indented, new Newtonsoft.Json.JsonSerializerSettings { ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver() }));
+					client.Index(metric, request => request.Index($"metricbeat-{DateTime.Now.ToString("yyyy.MM.dd")}"));
+					Console.WriteLine($"Sent {tick} metrics for {metric.Metricset.Name}");
+				}
 			}
+		}
+
+		private string Normalize(string name)
+		{
+			name = name.ToLower();
+			name = Regex.Replace(name, "[^a-z0-9]+", "_");
+			name = Regex.Replace(name, "_+", "_");
+			name = name.Trim('_');
+			return name;
 		}
 
 		public bool Start(HostControl hostControl)
@@ -70,16 +98,12 @@ namespace PerfmonBeat
 			}
 
 			Task.Factory.StartNew(() => Send(cancellationTokenSource.Token), cancellationTokenSource.Token);
-
-
-			Console.WriteLine("got " + config.Counters.Count());
-			//if (PerfmonCounterSelector.IsCounterAvailable("Processor", ""))
-
 			return true;
 		}
 
 		public bool Stop(HostControl hostControl)
 		{
+			cancellationTokenSource.Cancel();
 			return true;
 		}
 	}

@@ -7,10 +7,10 @@ namespace PerfmonBeat.Models
 	public class Metric
 	{
 		[JsonProperty("@timestamp")]
-		public DateTime Timestamp { get; set; }
-		public string Type { get; set; }
+		public DateTime Timestamp { get; set; } = DateTime.Now;
+		public string Type { get; set; } = "metricsets";
 		public Metricset Metricset { get; set; } = new Metricset();
 		public Beat Beat { get; set; } = new Beat();
-		public Dictionary<string, object> Perfmon { get; set; } = new Dictionary<string, object>();
+		public Dictionary<string, Dictionary<string, float>> Perfmon { get; set; } = new Dictionary<string, Dictionary<string, float>>();
 	}
 }
