@@ -14,13 +14,10 @@ namespace PerfmonBeat
 	{
 		public static void Main(string[] args)
 		{
-			var section = (PerfmonConfigurationSection)ConfigurationManager.GetSection("perfmon");
-			Console.WriteLine("Interval " + section.Interval);
-			Console.WriteLine("Elastic " + section.Elastic);
-			foreach (CounterElement counter in section.Counters)
-			{
-				Console.WriteLine($"{counter.Category} {counter.Counter} {counter.Instance}");
-			}
+			var config = (PerfmonConfiguration)ConfigurationManager.GetSection("perfmon");
+			Console.WriteLine($"Interval: {config.Interval:N0}");
+			Console.WriteLine($"Elastic: {config.Elastic}");
+			Console.WriteLine($"Counters: {config.Counters.Count()}");
 
 
 			//var assembly = Assembly.GetExecutingAssembly();

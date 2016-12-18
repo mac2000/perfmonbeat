@@ -1,4 +1,6 @@
 ﻿using System.Configuration;
+using System.Diagnostics;
+using System.Linq;
 
 namespace PerfmonBeat.Config
 {
@@ -42,5 +44,9 @@ namespace PerfmonBeat.Config
 				base["instance"] = value;
 			}
 		}
+
+		public string Key => $"{Category}\\{Counter}\\{Instance ?? "*"}";
+
+		public bool IsValid => PerformanceCounterCategory.GetCategories().Any(category => category.CategoryName == Category) && PerformanceCounterCategory.CounterExists(Counter, Category) && PerformanceCounterCategory.InstanceExists(Instance, Category);
 	}
 }
