@@ -15,7 +15,7 @@ namespace PerfmonBeat
 {
 	public class PerfmonBeatService : ServiceControl
 	{
-		private readonly ConcurrentDictionary<string, float> data = new ConcurrentDictionary<string, float>();
+		private readonly Dictionary<string, PerformanceCounter> counters = new Dictionary<string, PerformanceCounter>();
 		private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 		private readonly ElasticClient client;
 		private readonly PerfmonConfiguration config;
@@ -26,56 +26,36 @@ namespace PerfmonBeat
 			this.client = new ElasticClient(new ConnectionSettings(new Uri(config.Elastic)));
 		}
 
-		private void Collect(CounterElement counter, CancellationToken cancellationToken)
+		private void Collect(CancellationToken cancellationToken)
 		{
-			using (var performanceCounter = new PerformanceCounter(counter.Category, counter.Counter, counter.Instance))
-			{
-				performanceCounter.NextValue();
-
-				while (true)
-				{
-					if (cancellationToken.IsCancellationRequested)
-					{
-						break;
-					}
-
-					Thread.Sleep(config.Interval);
-					data[counter.Key] = performanceCounter.NextValue();
-					Console.WriteLine($"{data[counter.Key]:N0} - {counter.Key}");
-				}
-			}
-		}
-
-		private void Send(CancellationToken cancellationToken) {
 			while (true)
 			{
 				if (cancellationToken.IsCancellationRequested)
 				{
 					break;
 				}
-
-				Thread.Sleep(config.Interval);
-
+				
 				foreach (var category in config.Counters.GroupBy(counter => counter.Category))
 				{
-					var tick = 0;
 					var metric = new Metric();
 					metric.Metricset.Name = Normalize(category.Key);
+					metric.Perfmon[Normalize(category.Key)] = new Dictionary<string, Dictionary<string, float>>();
 
 					foreach (var counter in category.GroupBy(counter => counter.Counter))
 					{
-						metric.Perfmon[Normalize(counter.Key)] = new Dictionary<string, float>();
+						metric.Perfmon[Normalize(category.Key)][Normalize(counter.Key)] = new Dictionary<string, float>();
 
-						foreach (var item in counter) {
-							metric.Perfmon[Normalize(counter.Key)][Normalize(string.IsNullOrEmpty(item.Instance) ? "total" : item.Instance)] = data[item.Key];
-							tick += 1;
+						foreach (var item in counter)
+						{
+							metric.Perfmon[Normalize(category.Key)][Normalize(counter.Key)][Normalize(string.IsNullOrEmpty(item.Instance) ? "total" : item.Instance)] = counters[item.Key].NextValue();
 						}
 					}
-					
-					//Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(metric, Newtonsoft.Json.Formatting.Indented, new Newtonsoft.Json.JsonSerializerSettings { ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver() }));
+
+					Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(metric.Perfmon, Newtonsoft.Json.Formatting.None, new Newtonsoft.Json.JsonSerializerSettings { ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver() }));
 					client.Index(metric, request => request.Index($"metricbeat-{DateTime.Now.ToString("yyyy.MM.dd")}"));
-					Console.WriteLine($"Sent {tick} metrics for {metric.Metricset.Name}");
 				}
+
+				Thread.Sleep(config.Interval);
 			}
 		}
 
@@ -92,10 +72,11 @@ namespace PerfmonBeat
 		{
 			foreach (var counter in config.Counters)
 			{
-				Task.Factory.StartNew(() => Collect(counter, cancellationTokenSource.Token), cancellationTokenSource.Token);
+				counters.Add(counter.Key, new PerformanceCounter(counter.Category, counter.Counter, counter.Instance));
+				counters[counter.Key].NextValue();
 			}
 
-			Task.Factory.StartNew(() => Send(cancellationTokenSource.Token), cancellationTokenSource.Token);
+			Task.Factory.StartNew(() => Collect(cancellationTokenSource.Token), cancellationTokenSource.Token);
 			return true;
 		}
 

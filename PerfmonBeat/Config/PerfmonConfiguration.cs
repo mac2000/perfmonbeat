@@ -10,6 +10,7 @@ namespace PerfmonBeat.Config
 		[ConfigurationProperty("counters")]
 		private CountersCollection _counters => (CountersCollection)base["counters"];
 		public IEnumerable<CounterElement> Counters => _counters.Cast<CounterElement>().Where(c => c.IsValid);
+		public IEnumerable<CounterElement> InvalidCounters => _counters.Cast<CounterElement>().Where(c => !c.IsValid);
 
 		public string Elastic => ConfigurationManager.AppSettings[nameof(Elastic)];
 		public int Interval => int.Parse(ConfigurationManager.AppSettings[nameof(Interval)]);
