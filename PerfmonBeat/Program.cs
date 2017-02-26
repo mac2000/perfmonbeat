@@ -3,6 +3,7 @@ using System;
 using System.Configuration;
 using System.Linq;
 using Topshelf;
+using Topshelf.Hosts;
 
 namespace PerfmonBeat
 {
@@ -27,13 +28,10 @@ namespace PerfmonBeat
 
 			HostFactory.Run(x =>
 			{
-				x.Service<PerfmonBeatService>(hostSettings => new PerfmonBeatService(config));
+				x.Service(hostSettings => new PerfmonBeatService(config));
 				x.RunAsNetworkService();
-				//x.RunAsLocalSystem();
 				x.StartAutomaticallyDelayed();
-
 				x.EnableServiceRecovery(rc => rc.RestartService(1));
-
 				x.SetDescription(config.AssemblyDescription);
 				x.SetDisplayName(config.AssemblyName);
 				x.SetServiceName(config.AssemblyName);
